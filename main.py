@@ -1,6 +1,8 @@
 import asyncio
 import logging
+import os
 import aiohttp
+from aiohttp import web
 from aiogram import Bot, Dispatcher, types
 from aiogram.filters.command import Command
 
@@ -9,40 +11,50 @@ logging.basicConfig(level=logging.INFO)
 TELEGRAM_TOKEN = "8956965454:AAE59cdRPbtr6yz4vAwH0akzRvQNUogAbiI"
 API_DUCK_KEY = "sk-cvc-15d7a1d9457a18e474075b145212bb2f9627f78b1de2dc21c243d99439d35efd"
 
-bot = Bot(token=TELEGRAM_TOKEN)
+bot = Bot(token=TELEGRAM_TOKEN) 
 dp = Dispatcher()
 
+# --- Мини-сервер для Рендера, чтобы он не ругался на порты ---
+async def handle(request):
+    return web.Response(text="Бот работает и готов рвать домашку!")
 
+async def start_web_server():
+    app = web.Application()
+    app.add_routes([web.get('/', handle)])
+    runner = web.AppRunner(app)
+    await runner.setup()
+    port = int(os.environ.get("PORT", 10000))
+    site = web.TCPSite(runner, '0.0.0.0', port)
+    await site.start()
+    logging.info(f"Веб-сервер для Рендера запущен на порту {port}")
+
+# --- Логика бота ---
 @dp.message(Command("start"))
 async def cmd_start(message: types.Message):
     await message.answer(
         "Салют, бро! 🎓\n\n"
         "Я твой личный ИИ-решебник на базе Claude.\n"
-        "Отправь мне текст домашнего задания, и я всё решу!"
+        "Отправь мне текст домашнего задания, и я всё пошагово распишу!"
     )
-
 
 @dp.message()
 async def ask_chatgpt(message: types.Message):
     status_message = await message.answer("Секунду, штурмую базу знаний... 🧠")
-
-          url = "https://apiduck.sytes.net/v1/chat/completions"
-   
-   
+    
+    url = "https://apiduck.sytes.net/v1/chat/completions"
     headers = {
         "Authorization": f"Bearer {API_DUCK_KEY}",
         "Content-Type": "application/json"
     }
-
+    
     data = {
         "model": "claude-sonnet-4-6",
         "messages": [
-            {"role": "system",
-             "content": "Ты — крутой школьный репетитор. Решай задачи пошагово и понятно на русском языке."},
+            {"role": "system", "content": "Ты — крутой школьный репетитор. Решай задачи пошагово и понятно на русском языке."},
             {"role": "user", "content": message.text}
         ]
     }
-
+    
     try:
         timeout = aiohttp.ClientTimeout(total=90)
         async with aiohttp.ClientSession(timeout=timeout) as session:
@@ -56,16 +68,16 @@ async def ask_chatgpt(message: types.Message):
                     error_text = await response.text()
                     await status_message.delete()
                     await message.answer(f"Ошибка сервера ИИ (Код {response.status}):\n`{error_text}`")
-
+                    
     except Exception as e:
         await status_message.delete()
         await message.answer(f"Сетевая ошибка: `{repr(e)}`")
 
-
 async def main():
     await bot.delete_webhook(drop_pending_updates=True)
+    # Запускаем и веб-сервер для Рендера, и поллинг бота одновременно!
+    await start_web_server()
     await dp.start_polling(bot)
-
 
 if __name__ == "__main__":
     asyncio.run(main())
