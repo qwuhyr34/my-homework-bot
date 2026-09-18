@@ -1,8 +1,8 @@
 import asyncio
 import logging
+import aiohttp
 from aiogram import Bot, Dispatcher, types
 from aiogram.filters.command import Command
-from curl_cffi.requests import AsyncSession
 
 logging.basicConfig(level=logging.INFO)
 
@@ -27,7 +27,6 @@ async def ask_chatgpt(message: types.Message):
     status_message = await message.answer("Секунду, штурмую базу знаний... 🧠")
 
     url = "https://api.api-duck.com/v1/chat/completions"
-
     headers = {
         "Authorization": f"Bearer {API_DUCK_KEY}",
         "Content-Type": "application/json"
@@ -37,27 +36,28 @@ async def ask_chatgpt(message: types.Message):
         "model": "claude-sonnet-4-6",
         "messages": [
             {"role": "system",
-             "content": "Ты — крутой школьный репетитор. Решай задачи пошагово, пиши решения подробно и объясняй всё простым языком на русском языке."},
+             "content": "Ты — крутой школьный репетитор. Решай задачи пошагово и понятно на русском языке."},
             {"role": "user", "content": message.text}
         ]
     }
 
     try:
-        async with AsyncSession(impersonate="chrome") as session:
-            response = await session.post(url, json=data, headers=headers, timeout=90)
-
-            if response.status_code == 200:
-                result = response.json()
-                answer = result['choices'][0]['message']['content']
-                await status_message.delete()
-                await message.answer(answer)
-            else:
-                await status_message.delete()
-                await message.answer(f"Ошибка сервера ИИ (Код {response.status_code}):\n`{response.text}`")
+        timeout = aiohttp.ClientTimeout(total=90)
+        async with aiohttp.ClientSession(timeout=timeout) as session:
+            async with session.post(url, json=data, headers=headers, ssl=False) as response:
+                if response.status == 200:
+                    result = await response.json()
+                    answer = result['choices'][0]['message']['content']
+                    await status_message.delete()
+                    await message.answer(answer)
+                else:
+                    error_text = await response.text()
+                    await status_message.delete()
+                    await message.answer(f"Ошибка сервера ИИ (Код {response.status}):\n`{error_text}`")
 
     except Exception as e:
         await status_message.delete()
-        await message.answer(f"Сетевая ошибка: `{repr(e)}` \n\n(Обходим блокировку...)")
+        await message.answer(f"Сетевая ошибка: `{repr(e)}`")
 
 
 async def main():
