@@ -1,0 +1,69 @@
+import asyncio
+import logging
+from aiogram import Bot, Dispatcher, types
+from aiogram.filters.command import Command
+from curl_cffi.requests import AsyncSession
+
+logging.basicConfig(level=logging.INFO)
+
+TELEGRAM_TOKEN = "8956965454:AAG4Dup2K8i6clQH83jaA9gMRcGYEw8wS3Y"
+API_DUCK_KEY = "sk-cvc-15d7a1d9457a18e474075b145212bb2f9627f78b1de2dc21c243d99439d35efd"
+
+bot = Bot(token=TELEGRAM_TOKEN)
+dp = Dispatcher()
+
+
+@dp.message(Command("start"))
+async def cmd_start(message: types.Message):
+    await message.answer(
+        "Салют, бро! 🎓\n\n"
+        "Я твой личный ИИ-решебник на базе Claude.\n"
+        "Отправь мне текст домашнего задания, и я всё решу!"
+    )
+
+
+@dp.message()
+async def ask_chatgpt(message: types.Message):
+    status_message = await message.answer("Секунду, штурмую базу знаний... 🧠")
+
+    url = "https://api.api-duck.com/v1/chat/completions"
+
+    headers = {
+        "Authorization": f"Bearer {API_DUCK_KEY}",
+        "Content-Type": "application/json"
+    }
+
+    data = {
+        "model": "claude-sonnet-4-6",
+        "messages": [
+            {"role": "system",
+             "content": "Ты — крутой школьный репетитор. Решай задачи пошагово, пиши решения подробно и объясняй всё простым языком на русском языке."},
+            {"role": "user", "content": message.text}
+        ]
+    }
+
+    try:
+        async with AsyncSession(impersonate="chrome") as session:
+            response = await session.post(url, json=data, headers=headers, timeout=90)
+
+            if response.status_code == 200:
+                result = response.json()
+                answer = result['choices'][0]['message']['content']
+                await status_message.delete()
+                await message.answer(answer)
+            else:
+                await status_message.delete()
+                await message.answer(f"Ошибка сервера ИИ (Код {response.status_code}):\n`{response.text}`")
+
+    except Exception as e:
+        await status_message.delete()
+        await message.answer(f"Сетевая ошибка: `{repr(e)}` \n\n(Обходим блокировку...)")
+
+
+async def main():
+    await bot.delete_webhook(drop_pending_updates=True)
+    await dp.start_polling(bot)
+
+
+if __name__ == "__main__":
+    asyncio.run(main())
