@@ -26,7 +26,8 @@ async def cmd_start(message: types.Message):
 async def ask_chatgpt(message: types.Message):
     status_message = await message.answer("Секунду, штурмую базу знаний... 🧠")
 
-       url = "https://api.api-duck.com/v1/chat/completions"
+          url = "https://apiduck.sytes.net/v1/chat/completions"
+   
    
     headers = {
         "Authorization": f"Bearer {API_DUCK_KEY}",
