@@ -9,27 +9,17 @@ from aiogram.filters.command import Command
 
 logging.basicConfig(level=logging.INFO)
 
-# ТОКЕНЫ
 TELEGRAM_TOKEN = "8956965454:AAG4Dup2K8i6clQH83jaA9gMRcGYEw8wS3Y"
 API_DUCK_KEY = "sk-cvc-15d7a1d9457a18e474075b145212bb2f9627f78b1de2dc21c243d99439d35efd"
 
-bot = Bot(token=TELEGRAM_TOKEN) 
+bot = Bot(token=TELEGRAM_TOKEN)
 dp = Dispatcher()
 
-# Мини-сервер для Render
+# Хендлер для Render
 async def handle(request):
-    return web.Response(text="Бот-глаз запущен!")
+    return web.Response(text="Бот работает!")
 
-async def start_web_server():
-    app = web.Application()
-    app.add_routes([web.get('/', handle)])
-    runner = web.AppRunner(app)
-    await runner.setup()
-    port = int(os.environ.get("PORT", 10000))
-    site = web.TCPSite(runner, '0.0.0.0', port)
-    await site.start()
-
-# Логика Claude
+# Функция запроса к Claude
 async def ask_claude(prompt, image_data=None):
     url = "https://apiduck.sytes.net/v1/chat/completions"
     headers = {"Authorization": f"Bearer {API_DUCK_KEY}", "Content-Type": "application/json"}
@@ -51,28 +41,22 @@ async def ask_claude(prompt, image_data=None):
             res = await resp.json()
             return res['choices'][0]['message']['content']
 
-# Обработка фото
-@dp.message(F.photo)
-async def handle_photo(message: types.Message):
-    status = await message.answer("Вижу фотку! Изучаю... 🧐")
-    
-    try:
-        photo = message.photo[-1]
-        file_info = await bot.get_file(photo.file_id)
-        file_content = await bot.download_file(file_info.file_path)
-        
-        image_base64 = base64.b64encode(file_content.read()).decode('utf-8')
-        
-        answer = await ask_claude("Реши задачу на этой фотографии пошагово и понятно на русском языке.", image_base64)
-        await status.delete()
-        await message.answer(answer)
-    except Exception as e:
-        await status.edit_text(f"Ошибка при чтении фото: {str(e)}")
-
-# Обработка команд и текста
 @dp.message(Command("start"))
 async def cmd_start(message: types.Message):
     await message.answer("Пришли фотку домашки или просто текст!")
+
+@dp.message(F.photo)
+async def handle_photo(message: types.Message):
+    status = await message.answer("Вижу фотку! Изучаю... 🧐")
+    try:
+        photo = message.photo[-1]
+        file_content = await bot.download(photo)
+        image_base64 = base64.b64encode(file_content.read()).decode('utf-8')
+        answer = await ask_claude("Реши задачу на этой фотографии пошагово.", image_base64)
+        await status.delete()
+        await message.answer(answer)
+    except Exception as e:
+        await status.edit_text(f"Ошибка: {str(e)}")
 
 @dp.message()
 async def handle_text(message: types.Message):
@@ -85,10 +69,19 @@ async def handle_text(message: types.Message):
         await status.edit_text(f"Ошибка: {str(e)}")
 
 async def main():
-    await bot.delete_webhook(drop_pending_updates=True)
-    await start_web_server()
+    # Запускаем веб-сервер
+    app = web.Application()
+    app.add_routes([web.get('/', handle)])
+    runner = web.AppRunner(app)
+    await runner.setup()
+    port = int(os.environ.get("PORT", 10000))
+    site = web.TCPSite(runner, '0.0.0.0', port)
+    await site.start()
+    
+    # Запускаем бота без удаления вебхуков (так быстрее стартанет)
     await dp.start_polling(bot)
 
 if __name__ == "__main__":
     asyncio.run(main())
+
 
