@@ -9,14 +9,14 @@ from aiogram.filters.command import Command
 
 logging.basicConfig(level=logging.INFO)
 
-# ТВОИ ТОКЕНЫ
+# ТОКЕНЫ
 TELEGRAM_TOKEN = "8956965454:AAG4Dup2K8i6clQH83jaA9gMRcGYEw8wS3Y"
 API_DUCK_KEY = "sk-cvc-15d7a1d9457a18e474075b145212bb2f9627f78b1de2dc21c243d99439d35efd"
 
 bot = Bot(token=TELEGRAM_TOKEN) 
 dp = Dispatcher()
 
-# Мини-сервер для Render (чтобы не падал)
+# Мини-сервер для Render
 async def handle(request):
     return web.Response(text="Бот-глаз запущен!")
 
@@ -29,12 +29,11 @@ async def start_web_server():
     site = web.TCPSite(runner, '0.0.0.0', port)
     await site.start()
 
-# --- ЛОГИКА ОТПРАВКИ В CLAUDE ---
+# Логика Claude
 async def ask_claude(prompt, image_data=None):
     url = "https://apiduck.sytes.net/v1/chat/completions"
     headers = {"Authorization": f"Bearer {API_DUCK_KEY}", "Content-Type": "application/json"}
     
-    # Если есть картинка, кодируем её в формат, который поймет Клод
     content = [{"type": "text", "text": prompt}]
     if image_data:
         content.append({
@@ -52,27 +51,25 @@ async def ask_claude(prompt, image_data=None):
             res = await resp.json()
             return res['choices'][0]['message']['content']
 
-# --- ОБРАБОТКА ФОТО ---
+# Обработка фото
 @dp.message(F.photo)
 async def handle_photo(message: types.Message):
     status = await message.answer("Вижу фотку! Изучаю... 🧐")
     
-    # Скачиваем фото в память
-    photo = message.photo[-1]
-    file_info = await bot.get_file(photo.file_id)
-    file_content = await bot.download_file(file_info.file_path)
-    
-    # Переводим в Base64
-    image_base64 = base64.b64encode(file_content.read()).decode('utf-8')
-    
     try:
+        photo = message.photo[-1]
+        file_info = await bot.get_file(photo.file_id)
+        file_content = await bot.download_file(file_info.file_path)
+        
+        image_base64 = base64.b64encode(file_content.read()).decode('utf-8')
+        
         answer = await ask_claude("Реши задачу на этой фотографии пошагово и понятно на русском языке.", image_base64)
         await status.delete()
         await message.answer(answer)
     except Exception as e:
         await status.edit_text(f"Ошибка при чтении фото: {str(e)}")
 
-# --- ОБРАБОТКА ТЕКСТА ---
+# Обработка команд и текста
 @dp.message(Command("start"))
 async def cmd_start(message: types.Message):
     await message.answer("Пришли фотку домашки или просто текст!")
