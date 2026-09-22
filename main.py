@@ -31,7 +31,7 @@ async def ask_claude(prompt, image_data=None):
         })
 
     data = {
-        "model": "gemini-3.6-flash",
+        "model": "gpt-5.4-mini",
         "messages": [{"role": "user", "content": content}]
     }
     
