@@ -31,7 +31,7 @@ async def ask_claude(prompt, image_data=None):
         })
 
     data = {
-        "model": "gpt-5.4-mini",
+        "model": "claude-sonnet-4-6",
         "messages": [{"role": "user", "content": content}]
     }
     
