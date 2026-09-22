@@ -6,6 +6,7 @@ import base64
 from aiohttp import web
 from aiogram import Bot, Dispatcher, types, F
 from aiogram.filters.command import Command
+from aiogram.enums import ChatAction # <-- ДОБАВЛЕНО
 
 logging.basicConfig(level=logging.INFO)
 
@@ -15,11 +16,9 @@ API_DUCK_KEY = "sk-cvc-15d7a1d9457a18e474075b145212bb2f9627f78b1de2dc21c243d9943
 bot = Bot(token=TELEGRAM_TOKEN)
 dp = Dispatcher()
 
-# Хендлер для Render
 async def handle(request):
     return web.Response(text="Бот работает!")
 
-# Функция запроса к Claude
 async def ask_claude(prompt, image_data=None):
     url = "https://apiduck.sytes.net/v1/chat/completions"
     headers = {"Authorization": f"Bearer {API_DUCK_KEY}", "Content-Type": "application/json"}
@@ -47,29 +46,26 @@ async def cmd_start(message: types.Message):
 
 @dp.message(F.photo)
 async def handle_photo(message: types.Message):
-    status = await message.answer("Вижу фотку! Изучаю... 🧐")
+    await bot.send_chat_action(chat_id=message.chat.id, action=ChatAction.TYPING) # <-- ДОБАВЛЕНО
     try:
         photo = message.photo[-1]
         file_content = await bot.download(photo)
         image_base64 = base64.b64encode(file_content.read()).decode('utf-8')
         answer = await ask_claude("Реши задачу на этой фотографии пошагово.", image_base64)
-        await status.delete()
         await message.answer(answer)
     except Exception as e:
-        await status.edit_text(f"Ошибка: {str(e)}")
+        await message.answer(f"Ошибка: {str(e)}")
 
 @dp.message()
 async def handle_text(message: types.Message):
-    status = await message.answer("Думаю... 🧠")
+    await bot.send_chat_action(chat_id=message.chat.id, action=ChatAction.TYPING) # <-- ДОБАВЛЕНО
     try:
         answer = await ask_claude(message.text)
-        await status.delete()
         await message.answer(answer)
     except Exception as e:
-        await status.edit_text(f"Ошибка: {str(e)}")
+        await message.answer(f"Ошибка: {str(e)}")
 
 async def main():
-    # Запускаем веб-сервер
     app = web.Application()
     app.add_routes([web.get('/', handle)])
     runner = web.AppRunner(app)
@@ -78,10 +74,8 @@ async def main():
     site = web.TCPSite(runner, '0.0.0.0', port)
     await site.start()
     
-    # Запускаем бота без удаления вебхуков (так быстрее стартанет)
     await dp.start_polling(bot)
 
 if __name__ == "__main__":
     asyncio.run(main())
-
 
