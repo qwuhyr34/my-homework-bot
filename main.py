@@ -31,7 +31,7 @@ async def ask_claude(prompt, image_data=None):
         })
 
     data = {
-        "model": "claude-sonnet-4-6",
+        "model": "gemini-3.6-flash",
         "messages": [{"role": "user", "content": content}]
     }
     
