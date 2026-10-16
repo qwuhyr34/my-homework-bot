@@ -95,7 +95,7 @@ t.send_chat_action(chat_id=message.chat.id, action=ChatAction.TYPING)
 
 @dp.message()
 async def handle_text(message: types.Message):
-    add_user(message.from_user.id) # Сохраняем юзера
+    add_user(message.from_user.id) 
     await bot.send_chat_action(chat_id=message.chat.id, action=ChatAction.TYPING)
     try:
         answer = await ask_claude(message.text)
