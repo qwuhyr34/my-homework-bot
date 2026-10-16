@@ -70,7 +70,7 @@ async def ask_claude(prompt, image_data=None):
 
 @dp.message(Command("start"))
 async def cmd_start(message: types.Message):
-    add_user(message.from_user.id) # Сохраняем юзера
+    add_user(message.from_user.id) 
     await message.answer("Скинь задание или фото)
 
 @dp.message(Command("stats"))
