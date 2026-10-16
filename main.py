@@ -18,7 +18,6 @@ API_DUCK_KEY = "sk-cvc-15d7a1d9457a18e474075b145212bb2f9627f78b1de2dc21c243d9943
 bot = Bot(token=TELEGRAM_TOKEN)
 dp = Dispatcher()
 
-# --- РАБОТА С БАЗОЙ ДАННЫХ (SQLite) ---
 def init_db():
     conn = sqlite3.connect("bot_database.db")
     cursor = conn.cursor()
@@ -44,12 +43,10 @@ def get_users_count() -> int:
     count = cursor.fetchone()[0]
     conn.close()
     return count
-
-# --- ВЕБ-СЕРВЕР ДЛЯ RENDER ---
+
 async def handle(request):
     return web.Response(text="Бот работает!")
-
-# --- ЗАПРОС К CLAUDE ---
+
 async def ask_claude(prompt, image_data=None):
     url = "https://apiduck.sytes.net/v1/chat/completions"
     headers = {"Authorization": f"Bearer {API_DUCK_KEY}", "Content-Type": "application/json"}
@@ -70,15 +67,12 @@ async def ask_claude(prompt, image_data=None):
         async with session.post(url, json=data, headers=headers, ssl=False) as resp:
             res = await resp.json()
             return res['choices'][0]['message']['content']
-
-# --- КОМАНДЫ БОТА ---
-
+
 @dp.message(Command("start"))
 async def cmd_start(message: types.Message):
     add_user(message.from_user.id) # Сохраняем юзера
-    await message.answer("Пришли фотку домашки или просто текст!")
-
-# Команда для проверки статистики (только для тебя или для всех)
+    await message.answer("Скинь задание или фото)
+
 @dp.message(Command("stats"))
 async def cmd_stats(message: types.Message):
     add_user(message.from_user.id)
@@ -87,7 +81,7 @@ async def cmd_stats(message: types.Message):
 
 @dp.message(F.photo)
 async def handle_photo(message: types.Message):
-    add_user(message.from_user.id) # Сохраняем юзера
+    add_user(message.from_user.id) 
     await bo
 t.send_chat_action(chat_id=message.chat.id, action=ChatAction.TYPING)
     try:
