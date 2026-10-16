@@ -104,7 +104,7 @@ async def handle_text(message: types.Message):
         await message.answer(f"Ошибка: {str(e)}")
 
 async def main():
-    init_db() # Инициализируем базу данных при старте
+    init_db() 
     
     app = web.Application()
     app.add_routes([web.get('/', handle)])
