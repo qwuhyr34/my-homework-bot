@@ -65,7 +65,7 @@ async def ask_claude(user_id: int, prompt: str, image_data=None):
     messages = [
         {
             "role": "system", 
-            "content": "Тебя зовут троллфейс манго ты любишь фармить ауру и манго"
+            "content": "ты лютый троллфейс и ты фармишь ауру"
         }
     ]
 
