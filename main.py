@@ -11,17 +11,15 @@ from aiogram.enums import ChatAction
 
 logging.basicConfig(level=logging.INFO)
 
-TELEGRAM_TOKEN = os.getenv("8956965454:AAE59cdRPbtr6yz4vAwH0akzRvQNUogAbiI")
-API_DUCK_KEY = os.getenv("sk-cvc-15d7a1d9457a18e474075b145212bb2f9627f78b1de2dc21c243d99439d35efd")
+TELEGRAM_TOKEN = os.getenv("TELEGRAM_TOKEN", "8956965454:AAE59cdRPbtr6yz4vAwH0akzRvQNUogAbiI")
+API_DUCK_KEY = os.getenv("API_DUCK_KEY", "sk-cvc-15d7a1d9457a18e474075b145212bb2f9627f78b1de2dc21c243d99439d35efd")
 
 bot = Bot(token=TELEGRAM_TOKEN)
 dp = Dispatcher()
 
-# ----------------- РАБОТА С БАЗОЙ ДАННЫХ (БД) -----------------
 DB_NAME = "jorik_memory.db"
 
 def init_db():
-    """Создаем таблицу для хранения истории диалогов"""
     conn = sqlite3.connect(DB_NAME)
     cursor = conn.cursor()
     cursor.execute('''
@@ -36,7 +34,6 @@ def init_db():
     conn.close()
 
 def save_message(user_id: int, role: str, content: str):
-    """Сохраняем сообщение в базу"""
     conn = sqlite3.connect(DB_NAME)
     cursor = conn.cursor()
     cursor.execute("INSERT INTO history (user_id, role, content) VALUES (?, ?, ?)", (user_id, role, content))
@@ -44,24 +41,19 @@ def save_message(user_id: int, role: str, content: str):
     conn.close()
 
 def get_history(user_id: int, limit: int = 6):
-    """Достаем последние N сообщений пользователя"""
     conn = sqlite3.connect(DB_NAME)
     cursor = conn.cursor()
     cursor.execute("SELECT role, content FROM history WHERE user_id = ? ORDER BY id DESC LIMIT ?", (user_id, limit))
     rows = cursor.fetchall()
     conn.close()
-    # Разворачиваем, чтобы сообщения шли в хронологическом порядке
     return [{"role": r[0], "content": r[1]} for r in reversed(rows)]
 
 def clear_history(user_id: int):
-    """Очищаем память Жорика для конкретного юзера"""
     conn = sqlite3.connect(DB_NAME)
     cursor = conn.cursor()
     cursor.execute("DELETE FROM history WHERE user_id = ?", (user_id,))
     conn.commit()
     conn.close()
-
-# ----------------- ЗАПРОС К КЛОДУ С УЧЕТОМ ПАМЯТИ -----------------
 
 async def ask_claude(user_id: int, prompt: str, image_data=None):
     url = "https://apiduck.servepics.com/v1/chat/completions"
@@ -70,7 +62,6 @@ async def ask_claude(user_id: int, prompt: str, image_data=None):
         "Content-Type": "application/json"
     }
 
-    # 1. Задаем Жорику его системную роль и характер
     messages = [
         {
             "role": "system", 
@@ -78,13 +69,10 @@ async def ask_claude(user_id: int, prompt: str, image_data=None):
         }
     ]
 
-    # 2. Достаем прошлые сообщения из базы и добавляем в контекст
-    past_history = get_history(user_id, limit=6) # 6 последних сообщений (3 твоих, 3 от Жорика)
-    messages.exte
-nd(past_history)
+    past_history = get_history(user_id, limit=6)
+    messages.extend(past_history)
 
-    # 3. Формируем текущее сообщение (с картинкой или без)
-if image_data:
+    if image_data:
         current_content = [
             {"type": "text", "text": prompt},
             {
@@ -112,13 +100,10 @@ if image_data:
             res = await resp.json()
             answer_text = res['choices'][0]['message']['content']
 
-            # 4. Сохраняем и твой вопрос, и ответ Жорика в память!
             save_message(user_id, "user", prompt)
             save_message(user_id, "assistant", answer_text)
 
             return answer_text
-
-# ----------------- ХЕНДЛЕРЫ БОТА -----------------
 
 @dp.message(Command("start"))
 async def cmd_start(message: types.Message):
@@ -130,7 +115,8 @@ async def cmd_clear(message: types.Message):
     await message.answer("Память очищена, бро! Начинаем с чистого листа 🧼🐶")
 
 @dp.message(F.photo)
-async def handle_photo(message: types.Message):
+async def handle_photo(me
+ssage: types.Message):
     await bot.send_chat_action(chat_id=message.chat.id, action=ChatAction.TYPING)
     try:
         photo = message.photo[-1]
@@ -152,13 +138,10 @@ async def handle_text(message: types.Message):
     except Exception as e:
         await message.answer(f"Ошибка: {str(e)}")
 
-# ----------------- ЗАПУСК СЕРВЕРА И БОТА -----------------
-
 async def handle(request):
     return web.Response(text="Жорик работает и помнит всё!")
 
 async def main():
-    # Инициализируем БД при старте
     init_db()
 
     app = web.Application()
