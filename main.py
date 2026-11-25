@@ -100,7 +100,8 @@ async def ask_claude(user_id: int, prompt: str, image_data=None):
             res = await resp.json()
             answer_text = res['choices'][0]['message']['content']
 
-            save_message(user_id, "user", prompt)
+            save_message(user_id, "user", pr
+ompt)
             save_message(user_id, "assistant", answer_text)
 
             return answer_text
@@ -115,8 +116,7 @@ async def cmd_clear(message: types.Message):
     await message.answer("Память очищена, бро! Начинаем с чистого листа 🧼🐶")
 
 @dp.message(F.photo)
-async def handle_photo(me
-ssage: types.Message):
+async def handle_photo(message: types.Message):
     await bot.send_chat_action(chat_id=message.chat.id, action=ChatAction.TYPING)
     try:
         photo = message.photo[-1]
