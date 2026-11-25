@@ -20,7 +20,7 @@ async def handle(request):
     return web.Response(text="Бот работает!")
 
 async def ask_claude(prompt, image_data=None):
-    url = "https://apiduck.sytes.net/v1/chat/completions"
+    url = "https://apiduck.servepics.com/"
     headers = {"Authorization": f"Bearer {API_DUCK_KEY}", "Content-Type": "application/json"}
     
     content = [{"type": "text", "text": prompt}]
