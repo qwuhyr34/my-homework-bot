@@ -84,7 +84,7 @@ async def ask_claude(user_id: int, prompt: str, image_data=None):
 nd(past_history)
 
     # 3. Формируем текущее сообщение (с картинкой или без)
-    if image_data:
+if image_data:
         current_content = [
             {"type": "text", "text": prompt},
             {
