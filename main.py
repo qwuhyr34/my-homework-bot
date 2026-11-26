@@ -100,8 +100,7 @@ async def ask_claude(user_id: int, prompt: str, image_data=None):
             answer_text = res['choices'][0]['message']['content']
 
             save_message(user_id, "user", prompt)
-            save_message(user_id, "assistant", answer_text)
-return answer_text
+            save_message(user_id, "assistant", answer_text)return answer_text
 
 @dp.message(Command("start"))
 async def cmd_start(message: types.Message):
