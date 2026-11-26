@@ -100,8 +100,7 @@ async def cmd_clear(message: types.Message):
     await message.answer("Память очищена.")
 
 @dp.message(F.photo)
-a
-sync def handle_photo(message: types.Message):
+async def handle_photo(message: types.Message):
     await bot.send_chat_action(message.chat.id, ChatAction.TYPING)
     try:
         photo = message.photo[-1]
