@@ -107,7 +107,7 @@ async def ask_claude(user_id: int, prompt: str, image_data=None):
 
 @dp.message(Command("start"))
 async def cmd_start(message: types.Message):
-    await message.answer("Здарова! Я Жорик 🐶 Теперь я запоминаю наш контекст! Задавай вопросы, кидай домашки с фото. Если захочешь очистить мне память — пиши /clear.")
+    await message.answer(".")
 
 @dp.message(Command("clear"))
 async def cmd_clear(message: types.Message):
