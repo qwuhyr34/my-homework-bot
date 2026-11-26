@@ -13,7 +13,7 @@ from aiogram.enums import ChatAction
 logging.basicConfig(level=logging.INFO)
 
 # Токены
-TELEGRAM_TOKEN = os.getenv("TELEGRAM_TOKEN", "8956965454:AAGTHK_bpqnW12LMwrqlQeL92yuTpUgI9Og")
+TELEGRAM_TOKEN = os.getenv("TELEGRAM_TOKEN", "8956965454:AAF6AzwwAMie8JNCKFs_jJ68l56N9nKRtzU")
 API_DUCK_KEY = os.getenv("API_DUCK_KEY", "sk-cvc-15d7a1d9457a18e474075b145212bb2f9627f78b1de2dc21c243d99439d35efd")
 
 bot = Bot(token=TELEGRAM_TOKEN)
