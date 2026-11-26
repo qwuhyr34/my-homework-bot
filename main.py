@@ -11,6 +11,7 @@ from aiogram.enums import ChatAction
 
 logging.basicConfig(level=logging.INFO)
 
+# ТВОЙ НОВЫЙ ТОКЕН ТУТ:
 TELEGRAM_TOKEN = os.getenv("TELEGRAM_TOKEN", "8956965454:AAGTHK_bpqnW12LMwrqlQeL92yuTpUgI9Og")
 API_DUCK_KEY = os.getenv("API_DUCK_KEY", "sk-cvc-15d7a1d9457a18e474075b145212bb2f9627f78b1de2dc21c243d99439d35efd")
 
@@ -62,10 +63,11 @@ async def ask_claude(user_id: int, prompt: str, image_data=None):
         "Content-Type": "application/json"
     }
 
+    # Я вернул тебе немного стиля, а то у тебя там пусто было
     messages = [
         {
             "role": "system", 
-            "content": ""
+            "content": "Ты Жорик. Умный, четкий, без лишней воды. Помогай Артему с кодом и задачами."
         }
     ]
 
@@ -95,7 +97,7 @@ async def ask_claude(user_id: int, prompt: str, image_data=None):
             if resp.status != 200:
                 err_text = await resp.text()
                 logging.error(f"Ошибка сервера {resp.status}: {err_text}")
-                raise Exception(f"Ошибка сервера ({resp.status})")
+raise Exception(f"Ошибка сервера ({resp.status})")
                 
             res = await resp.json()
             answer_text = res['choices'][0]['message']['content']
@@ -107,7 +109,7 @@ async def ask_claude(user_id: int, prompt: str, image_data=None):
 
 @dp.message(Command("start"))
 async def cmd_start(message: types.Message):
-    await message.answer(".")
+    await message.answer("Здарова! Жорик на базе. Память работает.")
 
 @dp.message(Command("clear"))
 async def cmd_clear(message: types.Message):
@@ -138,11 +140,12 @@ async def handle_text(message: types.Message):
         await message.answer(f"Ошибка: {str(e)}")
 
 async def handle(request):
-    return web.Response(text="Жорик работает и помнит всё!")
+    return web.Response(text="Сервер Жорика активен!")
 
 async def main():
     init_db()
 
+    # Веб-сервер для Рендера
     app = web.Application()
     app.add_routes([web.get('/', handle)])
     runner = web.AppRunner(app)
@@ -150,6 +153,9 @@ async def main():
     port = int(os.environ.get("PORT", 10000))
     site = web.TCPSite(runner, '0.0.0.0', port)
     await site.start()
+    
+    # ВОТ ЭТА СТРОЧКА УБИВАЕТ ДУБЛИ:
+    await bot.delete_webhook(drop_pending_updates=True)
     
     await dp.start_polling(bot)
 
